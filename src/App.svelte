@@ -20,7 +20,8 @@
       imageUrl:
         "https://cdn.shopify.com/s/files/1/1136/0164/products/sanfran_grande.jpg?v=1459449289",
       address: "123 Poke Street, San Francisco, CA 94105",
-      contact: "painsf@test.com"
+      contact: "painsf@test.com",
+      isFavorite: false
     },
     {
       id: "e2",
@@ -30,7 +31,8 @@
       imageUrl:
         "https://cdn.shopify.com/s/files/1/1136/0164/products/sanfran_grande.jpg?v=1459449289",
       address: "123 Poke Street, San Francisco, CA 94105",
-      contact: "painsf@test.com"
+      contact: "painsf@test.com",
+      isFavorite: false
     }
   ];
 
@@ -45,6 +47,16 @@
       address: address
     };
     meetups = [newMeetup, ...meetups];
+  }
+
+  function toggleFavorite(event) {
+    const id = event.detail;
+    const updatedMeetup = { ...meetups.find(m => m.id === id) };
+    updatedMeetup.isFavorite = !updatedMeetup.isFavorite;
+    const meetupIndex = meetups.findIndex(m => m.id === id);
+    const updatedMeetups = [...meetups];
+    updatedMeetups[meetupIndex] = updatedMeetup;
+    meetups = updatedMeetups;
   }
 </script>
 
@@ -67,25 +79,21 @@
     <TextInput
       id="title"
       label="Title"
-      type="text"
       value={title}
       on:input={event => (title = event.target.value)} />
     <TextInput
       id="subtitle"
       label="Subtitle"
-      type="text"
       value={subtitle}
       on:input={event => (subtitle = event.target.value)} />
     <TextInput
       id="address"
       label="Address"
-      type="text"
       value={address}
       on:input={event => (address = event.target.value)} />
     <TextInput
       id="imageUrl"
       label="Image URL"
-      type="text"
       value={imageUrl}
       on:input={event => (imageUrl = event.target.value)} />
     <TextInput
@@ -102,5 +110,5 @@
       on:input={event => (description = event.target.value)} />
     <Button type="submit" caption="Save" />
   </form>
-  <MeetupGrid {meetups} />
+  <MeetupGrid {meetups} on:togglefavorite={toggleFavorite} />
 </main>
