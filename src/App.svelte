@@ -1,84 +1,66 @@
 <script>
+  import meetups from "./Meetups/meetups-store.js";
   import Header from "./UI/Header.svelte";
   import MeetupGrid from "./Meetups/MeetupGrid.svelte";
   import TextInput from "./UI/TextInput.svelte";
   import Button from "./UI/Button.svelte";
   import EditMeetup from "./Meetups/EditMeetup.svelte";
+  import MeetupDetail from "./Meetups/MeetupDetail.svelte";
 
-  let meetups = [
-    {
-      id: "e1",
-      title: "Paint SF",
-      subtitle: "May the ART to be with you",
-      description: "May the ART to be with you",
-      imageUrl:
-        "https://cdn.shopify.com/s/files/1/1136/0164/products/sanfran_grande.jpg?v=1459449289",
-      address: "123 Poke Street, San Francisco, CA 94105",
-      contact: "painsf@test.com",
-      isFavorite: false
-    },
-    {
-      id: "e2",
-      title: "Paint SF",
-      subtitle: "May the ART to be with you",
-      description: "May the ART to be with you",
-      imageUrl:
-        "https://cdn.shopify.com/s/files/1/1136/0164/products/sanfran_grande.jpg?v=1459449289",
-      address: "123 Poke Street, San Francisco, CA 94105",
-      contact: "painsf@test.com",
-      isFavorite: false
-    }
-  ];
+  // let meetups = ;
 
   let editMode;
+  let editedId;
+  let page = "overview";
+  let pageData = {};
 
-  function addMeetup(e) {
-    const newMeetup = {
-      id: Math.random().toString(),
-      title: e.detail.title,
-      subtitle: e.detail.subtitle,
-      description: e.detail.description,
-      imageUrl: e.detail.imageUrl,
-      contact: e.detail.email,
-      address: e.detail.address
-    };
-    meetups = [newMeetup, ...meetups];
+  function savedMeetup(event) {
     editMode = null;
-  }
-
-  function toggleFavorite(event) {
-    const id = event.detail;
-    const updatedMeetup = { ...meetups.find(m => m.id === id) };
-    updatedMeetup.isFavorite = !updatedMeetup.isFavorite;
-    const meetupIndex = meetups.findIndex(m => m.id === id);
-    const updatedMeetups = [...meetups];
-    updatedMeetups[meetupIndex] = updatedMeetup;
-    meetups = updatedMeetups;
+    editedId = null;
   }
 
   function cancelEdit() {
     editMode = null;
+    editedId = null;
+  }
+
+  function showDetails(event) {
+    page = "details";
+    pageData.id = event.detail;
+  }
+
+  function closeDetails() {
+    page = "overview";
+    pageData = {};
+  }
+
+  function startEdit(event) {
+    editMode = "edit";
+    editedId = event.detail;
   }
 </script>
 
 <style>
-  #meetups {
+  main {
     margin-top: 5rem;
-  }
-
-  .meetup-controls {
-    margin: 1rem;
   }
 </style>
 
 <Header />
 
-<main id="meetups">
-  <div class="meetup-controls">
-    <Button on:click={() => (editMode = 'add')}>New Meetup</Button>
-  </div>
-  {#if editMode === 'add'}
-    <EditMeetup on:save={addMeetup} on:cancel={cancelEdit} />
+<main>
+  {#if page === 'overview'}
+    {#if editMode === 'edit'}
+      <EditMeetup id={editedId} on:save={savedMeetup} on:cancel={cancelEdit} />
+    {/if}
+    <MeetupGrid
+      meetups={$meetups}
+      on:showdetails={showDetails}
+      on:edit={startEdit}
+      on:add={() => {
+        editMode = 'edit';
+      }} />
+  {:else}
+    <MeetupDetail id={pageData.id} on:close={closeDetails} />
   {/if}
-  <MeetupGrid {meetups} on:togglefavorite={toggleFavorite} />
 </main>

@@ -1,9 +1,12 @@
 <script>
+  import meetups from "./meetups-store.js";
   import { createEventDispatcher } from "svelte";
   import TextInput from "../UI/TextInput.svelte";
   import Button from "../UI/Button.svelte";
   import Modal from "../UI/Modal.svelte";
   import { isEmpty, isValidEmail } from "../helpers/validation.js";
+
+  export let id = null;
 
   let title = "";
   let subtitle = "";
@@ -11,6 +14,20 @@
   let email = "";
   let description = "";
   let imageUrl = "";
+
+  if (id) {
+    const unsubscribe = meetups.subscribe(items => {
+      const selectedMeetup = items.find(i => i.id === id);
+      title = selectedMeetup.title;
+      subtitle = selectedMeetup.subtitle;
+      address = selectedMeetup.address;
+      email = selectedMeetup.contactEmail;
+      description = selectedMeetup.description;
+      imageUrl = selectedMeetup.imageUrl;
+    });
+
+    unsubscribe();
+  }
 
   const dispatch = createEventDispatcher();
 
@@ -29,14 +46,69 @@
     emailValid;
 
   function submitForm() {
-    dispatch("save", {
+    const meetupData = {
       title: title,
       subtitle: subtitle,
-      address: address,
-      email: email,
       description: description,
-      imageUrl: imageUrl
-    });
+      imageUrl: imageUrl,
+      contactEmail: email,
+      address: address
+    };
+
+    // meetups.push(newMeetup); // DOES NOT WORK!
+    if (id) {
+      fetch(`https://svelte-firebase-todo.firebaseio.com/meetups/${id}.json`, {
+        method: "PATCH",
+        body: JSON.stringify(meetupData),
+        headers: { "Content-Type": "application/json" }
+      })
+        .then(res => {
+          if (!res.ok) {
+            throw new Error("An error occurred, please try again!");
+          }
+          meetups.updateMeetup(id, meetupData);
+        })
+        .catch(err => {
+          console.log(err);
+        });
+    } else {
+      fetch("https://svelte-firebase-todo.firebaseio.com/meetups.json", {
+        method: "POST",
+        body: JSON.stringify({ ...meetupData, isFavorite: false }),
+        headers: { "Content-Type": "application/json" }
+      })
+        .then(res => {
+          if (!res.ok) {
+            throw new Error("An error occurred, please try again!");
+          }
+          return res.json();
+        })
+        .then(data => {
+          meetups.addMeetup({
+            ...meetupData,
+            isFavorite: false,
+            id: data.name
+          });
+        })
+        .catch(err => {
+          console.log(err);
+        });
+    }
+    dispatch("save");
+  }
+
+  function deleteMeetup() {
+    fetch(`https://svelte-firebase-todo.firebaseio.com/${id}.json`, {
+      method: "DELETE"
+    })
+      .then(res => {
+        if (!res.ok) {
+          throw new Error("An error occurred, please try again!");
+        }
+        meetups.removeMeetup(id);
+      })
+      .catch(err => console.log(err));
+    dispatch("save");
   }
 
   function cancel() {
@@ -51,7 +123,7 @@
 </style>
 
 <Modal title="Edit Meetup Data" on:cancel>
-  <form on:submit|preventDefault={submitForm}>
+  <form on:submit={submitForm}>
     <TextInput
       id="title"
       label="Title"
@@ -101,5 +173,8 @@
     <Button type="button" on:click={submitForm} disabled={!formIsValid}>
       Save
     </Button>
+    {#if id}
+      <Button type="button" on:click={deleteMeetup}>Delete</Button>
+    {/if}
   </div>
 </Modal>
